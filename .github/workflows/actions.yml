@@ -28,13 +28,12 @@ jobs:
   increment-counter:
     needs: get-commit-author
     runs-on: ubuntu-latest
-    if: ${{ !contains(needs.get-commit-author.outputs.commit-author, 'github-actions[bot]') }}
+    if: ${{ ! contains(needs.get-commit-author.outputs.commit-author, 'github-actions[bot]') }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.ref }}
-          # repository: Gokris-Testing/workflow-sandbox-org-pvt
           token: ${{ secrets.WORKFLOW_INC }}
 
       - name: Print current counter value
@@ -50,7 +49,7 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@user.noreply.github.com'
-          git commit -am "Incremented counter [github-actions[bot]]"
+          git commit -a -m "Incremented counter [github-actions[bot]]"
           git push
 
   finish-workflow:
