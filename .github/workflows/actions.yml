@@ -19,7 +19,7 @@ jobs:
         id: check
         run: echo "author=$(git show -s | grep Author)" >> $GITHUB_OUTPUT
 
-      - name: Print orevious author
+      - name: Print previous author
         run: echo "Previous ${{ steps.check.outputs.author }}"
 
       - name: Get workflow actor
@@ -27,14 +27,18 @@ jobs:
 
   increment-counter:
     needs: get-commit-author
-    runs-on: ubuntu-latest
     if: ${{ ! contains(needs.get-commit-author.outputs.commit-author, 'github-actions[bot]') }}
+
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.ref }}
           token: ${{ secrets.WORKFLOW_INC }}
+
+      - name: Print previous commit author
+        run: echo "Previous ${{ needs.get-commit-author.outputs.commit-author }}"
 
       - name: Print current counter value
         run: echo "$(cat counter)"
