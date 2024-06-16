@@ -27,9 +27,10 @@ jobs:
 
   increment-counter:
     needs: get-commit-author
-    if: ${{ ! contains(needs.get-commit-author.outputs.commit-author, 'github-actions[bot]') }}
-
     runs-on: ubuntu-latest
+    if: ${{ ! contains(needs.get-commit-author.outputs.commit-author, 'github-actions[bot]') }}
+    outputs:
+      job-status: ${{ steps.status.outputs.run }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -56,10 +57,20 @@ jobs:
           git commit -a -m "Incremented counter [github-actions[bot]]"
           git push
 
+      - name: Output job status
+        id: status
+        run: echo "run=true" >> $GITHUB_OUTPUT
+
   finish-workflow:
     runs-on: ubuntu-latest
     needs: increment-counter
     if: ${{ always() }}
     steps:
+      - name: Print previous job result
+        run: echo "${{ needs.increment-counter.result }}"
+
+      - name: Print previous job status
+        run: echo "|-${{ needs.increment-counter.outputs.job-status }}-|"
+
       - name: Print workflow finished
         run: echo "WORKFLOW FINISHED!"
