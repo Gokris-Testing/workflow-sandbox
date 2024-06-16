@@ -61,9 +61,14 @@ jobs:
         id: status
         run: echo "run=true" >> $GITHUB_OUTPUT
 
-  finish-workflow:
+  run-when-inc-skipped:
     runs-on: ubuntu-latest
     needs: increment-counter
+    if: ${{ always() && needs.increment-counter.result == 'skipped' }}
+
+  finish-workflow:
+    runs-on: ubuntu-latest
+    needs: [increment-counter, run-when-inc-skipped]
     if: ${{ always() }}
     steps:
       - name: Print previous job result
