@@ -8,28 +8,39 @@ jobs:
   get-commit-author:
     runs-on: ubuntu-latest
     outputs:
-      commit-author: steps.check.outputs.author
+      commit-author: ${{ steps.check.outputs.author }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.action.pull_request.head.ref }}
+          ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Check previous commit author
         id: check
         run: echo "author=$(git show -s | grep Author)" >> $GITHUB_OUTPUT
 
-      - name: Print orevious author
+      - name: Print previous author
         run: echo "Previous ${{ steps.check.outputs.author }}"
 
       - name: Get workflow actor
         run: echo "${{ github.actor }}"
 
-  inc-counter:
-    runs-on: ubuntu-latest
+  increment-counter:
     needs: get-commit-author
-    if: ${{ !contains(needs.get-commit-author.outputs.commit-author, 'github-actions[bot]') }}
+    runs-on: ubuntu-latest
+    if: ${{ ! contains(needs.get-commit-author.outputs.commit-author, 'github-actions[bot]') }}
+    outputs:
+      job-status: ${{ steps.status.outputs.run }}
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ secrets.WORKFLOW_INC }}
+
+      - name: Print previous commit author
+        run: echo "Previous ${{ needs.get-commit-author.outputs.commit-author }}"
+
       - name: Print current counter value
         run: echo "$(cat counter)"
 
@@ -43,13 +54,42 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@user.noreply.github.com'
-          git commit -am "Incremented counter [github-actions[bot]]"
+          git commit -a -m "Incremented counter [github-actions[bot]]"
           git push
+
+      - name: Output job status
+        id: status
+        run: echo "run=true" >> $GITHUB_OUTPUT
+
+  always-fails:
+    runs-on: ubuntu-latest
+    steps:
+      - name: try to fail
+        run: |
+          git commit -a -m "random"
+          git push
+
+  run-when-inc-skipped:
+    runs-on: ubuntu-latest
+    needs: [increment-counter, always-fails]
+    if: ${{ always() && needs.increment-counter.result == 'skipped' }}
+    steps:
+      - name: Print increment-counter status
+        run: echo "${{ needs.increment-counter.result }}"
+
+      - name: Print always fails status
+        run: echo "${{ needs.always-fails.result }}"
 
   finish-workflow:
     runs-on: ubuntu-latest
-    needs: inc-counter
+    needs: [increment-counter, run-when-inc-skipped]
     if: ${{ always() }}
     steps:
+      - name: Print previous job result
+        run: echo "${{ needs.increment-counter.result }}"
+
+      - name: Print previous job status
+        run: echo "|-${{ needs.increment-counter.outputs.job-status }}-|"
+
       - name: Print workflow finished
         run: echo "WORKFLOW FINISHED!"
