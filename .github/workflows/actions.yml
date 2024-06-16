@@ -35,7 +35,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.ref }}
           repository: Gokris-Testing/workflow-sandbox-org-pvt
-          token: secrets.WORKFLOW_INC
+          token: ${{ secrets.WORKFLOW_INC }}
 
       - name: Print current counter value
         run: echo "$(cat counter)"
