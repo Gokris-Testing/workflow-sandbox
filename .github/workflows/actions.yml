@@ -61,10 +61,24 @@ jobs:
         id: status
         run: echo "run=true" >> $GITHUB_OUTPUT
 
+  always-fails:
+    runs-on: ubuntu-latest
+    steps:
+      - name: try to fail
+        run: |
+          git commit -a -m "random"
+          git push
+
   run-when-inc-skipped:
     runs-on: ubuntu-latest
-    needs: increment-counter
+    needs: [increment-counter, always-fails]
     if: ${{ always() && needs.increment-counter.result == 'skipped' }}
+    steps:
+      - name: Print increment-counter status
+        run: echo "${{ needs.increment-counter.result }}"
+
+      - name: Print always fails status
+        run: echo "${{ needs.always-fails.result }}"
 
   finish-workflow:
     runs-on: ubuntu-latest
